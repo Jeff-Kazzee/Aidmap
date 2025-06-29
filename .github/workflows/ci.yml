@@ -30,8 +30,8 @@ jobs:
     
     - name: Check for secrets
       run: |
-        # Check for hardcoded secrets
-        if grep -r "SUPABASE_URL\|SUPABASE_ANON_KEY\|STRIPE" --include="*.ts" --include="*.tsx" --include="*.js" --include="*.jsx" --exclude-dir=node_modules --exclude-dir=.git --exclude=".env*" .; then
+        # Check for hardcoded secrets (excluding environment variable usage)
+        if grep -r "https://.*\.supabase\.co\|eyJ[a-zA-Z0-9_-]*\.[a-zA-Z0-9_-]*\.[a-zA-Z0-9_-]*\|sk_test_\|pk_test_\|sk_live_\|pk_live_" --include="*.ts" --include="*.tsx" --include="*.js" --include="*.jsx" --exclude-dir=node_modules --exclude-dir=.git --exclude=".env*" .; then
           echo "❌ Found hardcoded secrets in code!"
           exit 1
         else

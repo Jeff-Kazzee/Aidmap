@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react'
-import { Shield, Phone, MapPin, FileText, Users, CheckCircle, Clock, X } from 'lucide-react'
+import { Shield, Phone, MapPin, CheckCircle, Clock, X } from 'lucide-react'
 import { supabase } from '../lib/supabase'
 import { useAuth } from '../hooks/useAuth'
 
@@ -101,7 +101,7 @@ export function UserVerification() {
     if (!user) return
 
     try {
-      let verificationData: any = {}
+      let verificationData: Record<string, string> = {}
 
       if (type === 'phone') {
         if (!phoneNumber.trim()) {
@@ -138,15 +138,6 @@ export function UserVerification() {
     }
   }
 
-  const getVerificationIcon = (type: string) => {
-    switch (type) {
-      case 'phone': return <Phone className="h-5 w-5" />
-      case 'address': return <MapPin className="h-5 w-5" />
-      case 'id_document': return <FileText className="h-5 w-5" />
-      case 'community_voucher': return <Users className="h-5 w-5" />
-      default: return <Shield className="h-5 w-5" />
-    }
-  }
 
   const getStatusIcon = (status: string) => {
     switch (status) {

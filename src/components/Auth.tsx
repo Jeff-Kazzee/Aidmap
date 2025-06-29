@@ -33,7 +33,7 @@ export function Auth() {
       if (result.error) {
         setError(result.error.message)
       }
-    } catch (err) {
+    } catch {
       setError('An unexpected error occurred')
     } finally {
       setLoading(false)

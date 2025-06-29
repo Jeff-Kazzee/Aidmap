@@ -1,6 +1,7 @@
-import React from 'react'
-import { X, DollarSign, MapPin, Clock, User, Heart, Tag } from 'lucide-react'
+import React, { useState, useEffect } from 'react'
+import { X, MapPin, Clock, User, Heart, Tag } from 'lucide-react'
 import { useAuth } from '../hooks/useAuth'
+import { supabase } from '../lib/supabase'
 
 interface AidRequest {
   id: string
@@ -26,6 +27,40 @@ interface NeedDetailsModalProps {
 
 export function NeedDetailsModal({ isOpen, onClose, aidRequest, onFund }: NeedDetailsModalProps) {
   const { user } = useAuth()
+  const [neighborhoodInfo, setNeighborhoodInfo] = useState<{name: string, city: string, state: string} | null>(null)
+
+  useEffect(() => {
+    // Fetch neighborhood info for the requester
+    const fetchNeighborhoodInfo = async () => {
+      if (!aidRequest.user_id) return
+      
+      try {
+        const { data: profile } = await supabase
+          .from('profiles')
+          .select('neighborhood_id')
+          .eq('id', aidRequest.user_id)
+          .single()
+        
+        if (profile?.neighborhood_id) {
+          const { data: neighborhood } = await supabase
+            .from('neighborhoods')
+            .select('name, city, state')
+            .eq('id', profile.neighborhood_id)
+            .single()
+          
+          if (neighborhood) {
+            setNeighborhoodInfo(neighborhood)
+          }
+        }
+      } catch (error) {
+        console.error('Error fetching neighborhood:', error)
+      }
+    }
+    
+    if (isOpen) {
+      fetchNeighborhoodInfo()
+    }
+  }, [aidRequest.user_id, isOpen])
 
   const formatAmount = (amount: number) => {
     return `$${amount.toFixed(2)}`
@@ -124,18 +159,25 @@ export function NeedDetailsModal({ isOpen, onClose, aidRequest, onFund }: NeedDe
           {/* Details */}
           <div className="space-y-3">
             {aidRequest.address && (
-              <div className="flex items-center space-x-3 text-gray-600">
-                <MapPin className="h-5 w-5" />
-                <span className="text-sm">{aidRequest.address}</span>
+              <div className="flex items-start space-x-3 text-gray-600">
+                <MapPin className="h-5 w-5 mt-0.5" />
+                <div>
+                  <p className="text-sm font-medium">Delivery/Meeting Address:</p>
+                  <p className="text-sm">{aidRequest.address}</p>
+                </div>
               </div>
             )}
             
-            <div className="flex items-center space-x-3 text-gray-600">
-              <MapPin className="h-5 w-5" />
-              <span className="text-sm">
-                Coordinates: {aidRequest.lat.toFixed(4)}, {aidRequest.lng.toFixed(4)}
-              </span>
-            </div>
+            {neighborhoodInfo && (
+              <div className="flex items-start space-x-3 text-gray-600">
+                <MapPin className="h-5 w-5 mt-0.5" />
+                <div>
+                  <p className="text-sm font-medium">Neighborhood:</p>
+                  <p className="text-sm">{neighborhoodInfo.name}</p>
+                  <p className="text-xs text-gray-500">{neighborhoodInfo.city}, {neighborhoodInfo.state}</p>
+                </div>
+              </div>
+            )}
             
             <div className="flex items-center space-x-3 text-gray-600">
               <Clock className="h-5 w-5" />

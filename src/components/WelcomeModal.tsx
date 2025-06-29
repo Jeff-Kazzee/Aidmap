@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react'
+import React from 'react'
 import { X, MapPin, Heart, Users, Shield, Navigation, Eye } from 'lucide-react'
 
 interface WelcomeModalProps {

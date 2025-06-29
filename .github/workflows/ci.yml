@@ -1,0 +1,56 @@
+name: CI
+
+on:
+  push:
+    branches: [Dev]
+  pull_request:
+    branches: [main, Dev]
+
+jobs:
+  security-and-quality:
+    runs-on: ubuntu-latest
+    
+    steps:
+    - uses: actions/checkout@v4
+    
+    - name: Setup Node.js
+      uses: actions/setup-node@v4
+      with:
+        node-version: '18'
+        cache: 'npm'
+    
+    - name: Install dependencies
+      run: npm ci
+    
+    - name: Run type checking
+      run: npm run typecheck || npx tsc --noEmit
+    
+    - name: Run ESLint
+      run: npm run lint
+    
+    - name: Check for secrets
+      run: |
+        # Check for hardcoded secrets (excluding environment variable usage)
+        if grep -r "https://.*\.supabase\.co\|eyJ[a-zA-Z0-9_-]*\.[a-zA-Z0-9_-]*\.[a-zA-Z0-9_-]*\|sk_test_\|pk_test_\|sk_live_\|pk_live_" --include="*.ts" --include="*.tsx" --include="*.js" --include="*.jsx" --exclude-dir=node_modules --exclude-dir=.git --exclude=".env*" .; then
+          echo "❌ Found hardcoded secrets in code!"
+          exit 1
+        else
+          echo "✅ No hardcoded secrets found"
+        fi
+    
+    - name: Audit dependencies
+      run: npm audit --audit-level=high
+      continue-on-error: true
+    
+    - name: Build application
+      run: npm run build
+      env:
+        VITE_SUPABASE_URL: ${{ secrets.VITE_SUPABASE_URL }}
+        VITE_SUPABASE_ANON_KEY: ${{ secrets.VITE_SUPABASE_ANON_KEY }}
+    
+    - name: Upload build artifacts
+      uses: actions/upload-artifact@v4
+      with:
+        name: dist
+        path: dist
+        retention-days: 1

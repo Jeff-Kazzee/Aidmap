@@ -1,8 +1,10 @@
 import React, { useState, useEffect } from 'react'
-import { Plus, Heart, Clock, CheckCircle, Upload, MessageCircle } from 'lucide-react'
+import { Plus, Heart, Clock, CheckCircle, Upload, MessageCircle, Edit, Trash2, XCircle } from 'lucide-react'
 import { supabase } from '../lib/supabase'
 import { useAuth } from '../hooks/useAuth'
 import { Link } from 'react-router-dom'
+import { EditRequestModal } from './EditRequestModal'
+import { CloseRequestModal } from './CloseRequestModal'
 
 interface AidRequest {
   id: string
@@ -15,6 +17,13 @@ interface AidRequest {
   proof_of_delivery_url: string | null
   category: string
   urgency: string
+  address?: string | null
+  lat: number
+  lng: number
+  user_id: string
+  fulfillment_status?: 'fulfilled' | 'unfulfilled' | null
+  closed_at?: string | null
+  closure_notes?: string | null
 }
 
 export function Dashboard() {
@@ -23,6 +32,11 @@ export function Dashboard() {
   const [fundedRequests, setFundedRequests] = useState<AidRequest[]>([])
   const [loading, setLoading] = useState(true)
   const [activeTab, setActiveTab] = useState<'my-requests' | 'funded'>('my-requests')
+  const [showEditModal, setShowEditModal] = useState(false)
+  const [showCloseModal, setShowCloseModal] = useState(false)
+  const [requestToEdit, setRequestToEdit] = useState<AidRequest | null>(null)
+  const [requestToClose, setRequestToClose] = useState<AidRequest | null>(null)
+  const [deleteConfirmId, setDeleteConfirmId] = useState<string | null>(null)
 
   useEffect(() => {
     if (user) {
@@ -95,7 +109,7 @@ export function Dashboard() {
     }
   }
 
-  const handleUploadProof = async (requestId: string) => {
+  const handleUploadProof = async () => {
     // This would handle file upload to Supabase storage
     alert('File upload functionality would be implemented here')
   }
@@ -117,6 +131,24 @@ export function Dashboard() {
       loadDashboardData()
     } catch (error) {
       console.error('Error confirming receipt:', error)
+    }
+  }
+
+  const handleDeleteRequest = async (requestId: string) => {
+    try {
+      const { error } = await supabase
+        .from('aid_requests')
+        .delete()
+        .eq('id', requestId)
+        .eq('user_id', user?.id) // Extra safety check
+
+      if (error) throw error
+      
+      setDeleteConfirmId(null)
+      loadDashboardData()
+    } catch (error) {
+      console.error('Error deleting request:', error)
+      alert('Failed to delete request. Please try again.')
     }
   }
 
@@ -233,6 +265,59 @@ export function Dashboard() {
                           Confirm Receipt
                         </button>
                       )}
+
+                      {request.status === 'open' && (
+                        <>
+                          <button
+                            onClick={() => {
+                              setRequestToEdit(request)
+                              setShowEditModal(true)
+                            }}
+                            className="inline-flex items-center px-3 py-1 text-sm bg-gray-100 text-gray-700 rounded-md hover:bg-gray-200 transition-colors"
+                          >
+                            <Edit className="h-3 w-3 mr-1" />
+                            Edit
+                          </button>
+                          
+                          {deleteConfirmId === request.id ? (
+                            <div className="flex items-center space-x-1">
+                              <button
+                                onClick={() => handleDeleteRequest(request.id)}
+                                className="inline-flex items-center px-2 py-1 text-xs bg-red-600 text-white rounded-md hover:bg-red-700 transition-colors"
+                              >
+                                Confirm
+                              </button>
+                              <button
+                                onClick={() => setDeleteConfirmId(null)}
+                                className="inline-flex items-center px-2 py-1 text-xs bg-gray-400 text-white rounded-md hover:bg-gray-500 transition-colors"
+                              >
+                                Cancel
+                              </button>
+                            </div>
+                          ) : (
+                            <button
+                              onClick={() => setDeleteConfirmId(request.id)}
+                              className="inline-flex items-center px-3 py-1 text-sm bg-red-100 text-red-700 rounded-md hover:bg-red-200 transition-colors"
+                            >
+                              <Trash2 className="h-3 w-3 mr-1" />
+                              Delete
+                            </button>
+                          )}
+                        </>
+                      )}
+
+                      {(request.status === 'open' || request.status === 'funded') && (
+                        <button
+                          onClick={() => {
+                            setRequestToClose(request)
+                            setShowCloseModal(true)
+                          }}
+                          className="inline-flex items-center px-3 py-1 text-sm bg-purple-100 text-purple-700 rounded-md hover:bg-purple-200 transition-colors"
+                        >
+                          <XCircle className="h-3 w-3 mr-1" />
+                          Close
+                        </button>
+                      )}
                     </div>
                   </div>
                 </div>
@@ -302,7 +387,7 @@ export function Dashboard() {
                             Chat
                           </Link>
                           <button
-                            onClick={() => handleUploadProof(request.id)}
+                            onClick={() => handleUploadProof()}
                             className="inline-flex items-center px-3 py-1 text-sm bg-purple-100 text-purple-700 rounded-md hover:bg-purple-200 transition-colors"
                           >
                             <Upload className="h-3 w-3 mr-1" />
@@ -317,6 +402,42 @@ export function Dashboard() {
             </div>
           )}
         </div>
+      )}
+
+      {/* Edit Modal */}
+      {showEditModal && requestToEdit && (
+        <EditRequestModal
+          isOpen={showEditModal}
+          onClose={() => {
+            setShowEditModal(false)
+            setRequestToEdit(null)
+          }}
+          onSuccess={() => {
+            loadDashboardData()
+            setShowEditModal(false)
+            setRequestToEdit(null)
+          }}
+          request={requestToEdit}
+        />
+      )}
+
+      {/* Close Modal */}
+      {showCloseModal && requestToClose && (
+        <CloseRequestModal
+          isOpen={showCloseModal}
+          onClose={() => {
+            setShowCloseModal(false)
+            setRequestToClose(null)
+          }}
+          onSuccess={() => {
+            loadDashboardData()
+            setShowCloseModal(false)
+            setRequestToClose(null)
+          }}
+          requestId={requestToClose.id}
+          requestTitle={requestToClose.title}
+          requestStatus={requestToClose.status}
+        />
       )}
     </div>
   )

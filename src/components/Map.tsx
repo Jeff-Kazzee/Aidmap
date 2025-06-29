@@ -128,9 +128,9 @@ export function Map() {
   useEffect(() => {
     if (user) {
       loadUserProfile()
-    } else {
-      loadAllAidRequests()
     }
+    // Always load all aid requests, regardless of user status
+    loadAllAidRequests()
   }, [user])
 
   useEffect(() => {
@@ -139,10 +139,10 @@ export function Map() {
     }
   }, [userProfile])
 
+  // Remove neighborhood filtering - always show all requests
   useEffect(() => {
-    if (userNeighborhood) {
-      loadLocalAidRequests()
-    }
+    // Reload all requests when neighborhood changes
+    loadAllAidRequests()
   }, [userNeighborhood])
 
   const loadUserProfile = async () => {
@@ -264,11 +264,8 @@ export function Map() {
   const handlePostSuccess = () => {
     setShowPostModal(false)
     setClickedLocation(null)
-    if (userNeighborhood) {
-      loadLocalAidRequests()
-    } else {
-      loadAllAidRequests()
-    }
+    // Always reload all requests
+    loadAllAidRequests()
   }
 
   const handleMarkerClick = (request: AidRequest) => {
@@ -330,8 +327,8 @@ export function Map() {
   return (
     <div className="relative h-[calc(100vh-7rem)] md:h-[calc(100vh-4rem)]">
       <MapContainer
-        center={userNeighborhood ? [userNeighborhood.lat, userNeighborhood.lng] : defaultCenter}
-        zoom={userNeighborhood ? 12 : 13}
+        center={userLocation ? [userLocation.lat, userLocation.lng] : defaultCenter}
+        zoom={13}
         className="h-full w-full"
         ref={mapRef}
         zoomControl={true}
@@ -370,20 +367,6 @@ export function Map() {
           </Marker>
         )}
 
-        {/* Neighborhood radius circle */}
-        {userNeighborhood && (
-          <Circle
-            center={[userNeighborhood.lat, userNeighborhood.lng]}
-            radius={userNeighborhood.radius_miles * 1609.34} // Convert miles to meters
-            pathOptions={{
-              color: '#3B82F6',
-              fillColor: '#3B82F6',
-              fillOpacity: 0.1,
-              weight: 2,
-              dashArray: '5, 5'
-            }}
-          />
-        )}
         
         {/* Aid request markers with privacy offset */}
         {aidRequests.map((request) => {
@@ -542,15 +525,9 @@ export function Map() {
                 )}
               </div>
               
-              {userNeighborhood ? (
-                <p className="text-green-600 text-xs">
-                  Showing requests within {userNeighborhood.radius_miles} miles of your neighborhood
-                </p>
-              ) : (
-                <p className="text-orange-600 text-xs">
-                  Join a neighborhood to see local requests only
-                </p>
-              )}
+              <p className="text-green-600 text-xs">
+                Showing all community aid requests
+              </p>
             </div>
           ) : (
             <p className="text-gray-500 text-sm">

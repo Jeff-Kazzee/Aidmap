@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useRef } from 'react'
-import { Send, MapPin, Users, AlertTriangle, Shield, MessageSquare, Heart, Wrench, HelpCircle, Filter, Flag } from 'lucide-react'
+import { Send, MapPin, Users, AlertTriangle, Shield, MessageSquare, Heart, HelpCircle, Flag } from 'lucide-react'
 import { supabase } from '../lib/supabase'
 import { useAuth } from '../hooks/useAuth'
 
@@ -182,7 +182,7 @@ export function CommunityChat() {
         schema: 'public',
         table: 'community_messages',
         filter: `neighborhood_id=eq.${profile.neighborhood_id}`
-      }, (payload) => {
+      }, () => {
         loadMessages() // Reload to get profile data
       })
       .subscribe()
@@ -272,7 +272,7 @@ export function CommunityChat() {
     if (!user || !profile?.neighborhood_id || !newMessage.trim()) return
 
     try {
-      const messageData: any = {
+      const messageData: Record<string, unknown> = {
         user_id: user.id,
         neighborhood_id: profile.neighborhood_id,
         message_type: messageType,
@@ -619,7 +619,7 @@ export function CommunityChat() {
             <div className="flex space-x-4">
               <select
                 value={messageType}
-                onChange={(e) => setMessageType(e.target.value as any)}
+                onChange={(e) => setMessageType(e.target.value as 'help_needed' | 'help_offered' | 'general_discussion')}
                 className="px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-all duration-200"
               >
                 <option value="general_discussion">General Discussion</option>
@@ -630,7 +630,7 @@ export function CommunityChat() {
               {messageType !== 'general_discussion' && (
                 <select
                   value={urgency}
-                  onChange={(e) => setUrgency(e.target.value as any)}
+                  onChange={(e) => setUrgency(e.target.value as 'low' | 'medium' | 'high' | 'critical')}
                   className="px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-all duration-200"
                 >
                   <option value="low">Low Priority</option>

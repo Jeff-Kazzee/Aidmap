@@ -1,7 +1,7 @@
 import { useState, useEffect } from 'react'
 import { useAuth } from './useAuth'
 
-const WELCOME_MODAL_KEY = 'aidmap_welcome_modal_shown'
+// const WELCOME_MODAL_KEY = 'aidmap_welcome_modal_shown' // Reserved for future use
 const USER_WELCOME_KEY_PREFIX = 'aidmap_user_welcome_'
 
 export function useWelcomeModal() {

@@ -1,7 +1,8 @@
-import React from 'react'
+import React, { useState, useEffect } from 'react'
 import { Link, useLocation } from 'react-router-dom'
-import { Heart, User, MapPin, MessageCircle, Users, Mail, Shield, LogOut } from 'lucide-react'
+import { Heart, User, MapPin, MessageCircle, Users, Mail, Shield, LogOut, ShieldAlert } from 'lucide-react'
 import { useAuth } from '../hooks/useAuth'
+import { supabase } from '../lib/supabase'
 
 interface LayoutProps {
   children: React.ReactNode
@@ -10,6 +11,32 @@ interface LayoutProps {
 export function Layout({ children }: LayoutProps) {
   const { user, signOut } = useAuth()
   const location = useLocation()
+  const [isAdmin, setIsAdmin] = useState(false)
+
+  useEffect(() => {
+    const checkAdminStatus = async () => {
+      if (!user || user.email !== 'jeffkazzee@gmail.com') {
+        setIsAdmin(false)
+        return
+      }
+
+      try {
+        const { data, error } = await supabase
+          .from('profiles')
+          .select('is_admin')
+          .eq('id', user.id)
+          .single()
+
+        if (error) throw error
+        setIsAdmin(data?.is_admin === true)
+      } catch (error) {
+        console.error('Error checking admin status:', error)
+        setIsAdmin(false)
+      }
+    }
+
+    checkAdminStatus()
+  }, [user])
 
   const navigation = [
     { name: 'Map', href: '/map', icon: MapPin },
@@ -19,6 +46,11 @@ export function Layout({ children }: LayoutProps) {
     { name: 'Direct Messages', href: '/direct-messages', icon: Mail },
     { name: 'Verification', href: '/verification', icon: Shield },
   ]
+
+  // Add admin panel only for jeffkazzee@gmail.com
+  if (isAdmin) {
+    navigation.push({ name: 'Admin', href: '/admin', icon: ShieldAlert })
+  }
 
   const handleSignOut = async () => {
     await signOut()

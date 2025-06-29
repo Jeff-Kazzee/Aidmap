@@ -266,7 +266,7 @@ export type Database = {
           status: 'pending' | 'verified' | 'rejected'
           verified_at: string | null
           verified_by: string | null
-          verification_data: any
+          verification_data: Record<string, unknown> | null
           created_at: string
         }
         Insert: {
@@ -276,7 +276,7 @@ export type Database = {
           status?: 'pending' | 'verified' | 'rejected'
           verified_at?: string | null
           verified_by?: string | null
-          verification_data?: any
+          verification_data?: Record<string, unknown> | null
           created_at?: string
         }
         Update: {
@@ -286,7 +286,7 @@ export type Database = {
           status?: 'pending' | 'verified' | 'rejected'
           verified_at?: string | null
           verified_by?: string | null
-          verification_data?: any
+          verification_data?: Record<string, unknown> | null
           created_at?: string
         }
       }

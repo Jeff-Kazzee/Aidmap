@@ -1,7 +1,8 @@
 import React, { useState, useEffect, useRef } from 'react'
-import { MapContainer, TileLayer, Marker, Popup, useMapEvents, Circle } from 'react-leaflet'
+import { MapContainer, TileLayer, Marker, Popup, useMapEvents } from 'react-leaflet'
 import { Icon, LatLngTuple } from 'leaflet'
-import { Plus, DollarSign, User, Clock, Navigation, MapPin, Eye, EyeOff, HelpCircle, X } from 'lucide-react'
+import L from 'leaflet'
+import { Plus, DollarSign, User, Navigation, MapPin, Eye, EyeOff, HelpCircle, X } from 'lucide-react'
 import { supabase } from '../lib/supabase'
 import { useAuth } from '../hooks/useAuth'
 import { useWelcomeModal } from '../hooks/useWelcomeModal'
@@ -12,7 +13,8 @@ import { WelcomeModal } from './WelcomeModal'
 import 'leaflet/dist/leaflet.css'
 
 // Fix for default markers in react-leaflet
-delete (Icon.Default.prototype as any)._getIconUrl
+const proto = Icon.Default.prototype as Record<string, unknown>
+delete proto._getIconUrl
 Icon.Default.mergeOptions({
   iconRetinaUrl: 'https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.7.1/images/marker-icon-2x.png',
   iconUrl: 'https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.7.1/images/marker-icon.png',
@@ -47,6 +49,9 @@ interface AidRequest {
   user_id: string
   category: string
   urgency: string
+  address?: string
+  fulfillment_status?: 'fulfilled' | 'unfulfilled' | null
+  closed_at?: string | null
 }
 
 interface Profile {
@@ -106,6 +111,45 @@ const addPrivacyOffset = (lat: number, lng: number) => {
   }
 }
 
+// Helper component to display neighborhood info
+function RequestNeighborhood({ userId }: { userId: string }) {
+  const [neighborhood, setNeighborhood] = useState<string>('')
+  
+  useEffect(() => {
+    const fetchNeighborhood = async () => {
+      try {
+        const { data: profile } = await supabase
+          .from('profiles')
+          .select('neighborhood_id')
+          .eq('id', userId)
+          .single()
+        
+        if (profile?.neighborhood_id) {
+          const { data: hood } = await supabase
+            .from('neighborhoods')
+            .select('name, city, state')
+            .eq('id', profile.neighborhood_id)
+            .single()
+          
+          if (hood) {
+            setNeighborhood(`${hood.name}, ${hood.city}`)
+          }
+        }
+      } catch (error) {
+        console.error('Error fetching neighborhood:', error)
+      }
+    }
+    
+    fetchNeighborhood()
+  }, [userId])
+  
+  return neighborhood ? (
+    <p className="text-xs text-gray-600 mb-2">
+      📍 {neighborhood}
+    </p>
+  ) : null
+}
+
 export function Map() {
   const { user } = useAuth()
   const { showWelcomeModal, closeWelcomeModal, showWelcomeModalManually } = useWelcomeModal()
@@ -121,7 +165,7 @@ export function Map() {
   const [showPaymentModal, setShowPaymentModal] = useState(false)
   const [selectedRequest, setSelectedRequest] = useState<AidRequest | null>(null)
   const [clickedLocation, setClickedLocation] = useState<{ lat: number; lng: number } | null>(null)
-  const mapRef = useRef<any>(null)
+  const mapRef = useRef<L.Map | null>(null)
 
   const defaultCenter: LatLngTuple = [40.7128, -74.0060] // New York City
 
@@ -241,6 +285,20 @@ export function Map() {
 
       if (error) throw error
       setAidRequests(data || [])
+      
+      // Auto-fit map to show all requests if there are any
+      if (data && data.length > 0 && mapRef.current) {
+        const bounds = data.reduce((bounds, request) => {
+          return bounds.extend([request.lat, request.lng])
+        }, mapRef.current.leafletElement?.getBounds() || L.latLngBounds([]))
+        
+        // Only auto-fit on initial load
+        if (!userLocation) {
+          setTimeout(() => {
+            mapRef.current?.fitBounds(bounds, { padding: [50, 50] })
+          }, 100)
+        }
+      }
     } catch (error) {
       console.error('Error loading aid requests:', error)
     } finally {
@@ -271,6 +329,12 @@ export function Map() {
   const handleMarkerClick = (request: AidRequest) => {
     setSelectedRequest(request)
     setShowDetailsModal(true)
+    // Fly to the request location
+    if (mapRef.current) {
+      mapRef.current.flyTo([request.lat, request.lng], 15, {
+        duration: 1.5
+      })
+    }
   }
 
   const handleFundRequest = (request: AidRequest) => {
@@ -399,6 +463,7 @@ export function Map() {
                     <span className="bg-blue-100 text-blue-800 px-2 py-1 rounded">{request.category}</span>
                     <span className="bg-orange-100 text-orange-800 px-2 py-1 rounded">{request.urgency}</span>
                   </div>
+                  <RequestNeighborhood userId={request.user_id} />
                   {showPrivacyMode && (
                     <p className="text-xs text-gray-500 mb-2 italic">
                       📍 Approximate location for privacy

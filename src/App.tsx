@@ -9,6 +9,8 @@ import { CommunityChat } from './components/CommunityChat'
 import { DirectMessages } from './components/DirectMessages'
 import { UserVerification } from './components/UserVerification'
 import { LandingPage } from './components/LandingPage'
+import { AdminPanel } from './components/AdminPanel'
+import { AdminRoute } from './components/AdminRoute'
 import { useAuth } from './hooks/useAuth'
 
 function App() {
@@ -71,6 +73,14 @@ function App() {
                 <Route
                   path="/verification"
                   element={user ? <UserVerification /> : <Navigate to="/auth" replace />}
+                />
+                <Route
+                  path="/admin"
+                  element={
+                    <AdminRoute>
+                      <AdminPanel />
+                    </AdminRoute>
+                  }
                 />
               </Routes>
             </Layout>

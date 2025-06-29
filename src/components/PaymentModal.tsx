@@ -2,7 +2,7 @@ import React, { useState } from 'react'
 import { X, CreditCard, Smartphone, QrCode, DollarSign, Copy, Check, AlertCircle } from 'lucide-react'
 import { supabase } from '../lib/supabase'
 import { useAuth } from '../hooks/useAuth'
-import { processMockPayment, formatAlgoAmount, type MockCard } from '../services/mockPayments'
+import { processMockPayment, type MockCard } from '../services/mockPayments'
 
 interface AidRequest {
   id: string
@@ -24,7 +24,7 @@ export function PaymentModal({ isOpen, onClose, aidRequest, onSuccess }: Payment
   const [amount, setAmount] = useState(aidRequest.amount_algo.toString())
   const [loading, setLoading] = useState(false)
   const [copied, setCopied] = useState(false)
-  const [showDemoMode, setShowDemoMode] = useState(true)
+  const [showDemoMode] = useState(true)
   const [processingPayment, setProcessingPayment] = useState(false)
   const [paymentSuccess, setPaymentSuccess] = useState(false)
   

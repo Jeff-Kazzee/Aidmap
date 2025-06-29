@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react'
-import { X, DollarSign, MapPin, Clock, User, Heart, Tag } from 'lucide-react'
+import { X, MapPin, Clock, User, Heart, Tag } from 'lucide-react'
 import { useAuth } from '../hooks/useAuth'
 import { supabase } from '../lib/supabase'
 

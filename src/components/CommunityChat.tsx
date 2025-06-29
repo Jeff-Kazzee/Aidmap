@@ -64,6 +64,14 @@ export function CommunityChat() {
   const [filterType, setFilterType] = useState<'all' | 'help_needed' | 'help_offered' | 'general_discussion'>('all')
   const [showPostForm, setShowPostForm] = useState(false)
   const [loading, setLoading] = useState(true)
+  const [showCreateNeighborhood, setShowCreateNeighborhood] = useState(false)
+  const [newNeighborhood, setNewNeighborhood] = useState({
+    name: '',
+    city: '',
+    state: '',
+    zipCode: ''
+  })
+  const [creatingNeighborhood, setCreatingNeighborhood] = useState(false)
   const messagesEndRef = useRef<HTMLDivElement>(null)
 
   const categories = ['errands', 'repairs', 'advice', 'transportation', 'childcare', 'medical', 'food', 'housing', 'other']
@@ -199,6 +207,63 @@ export function CommunityChat() {
       await loadProfile()
     } catch (error) {
       console.error('Error joining neighborhood:', error)
+      alert('Failed to join neighborhood. Please try again.')
+    }
+  }
+
+  const createNeighborhood = async (e: React.FormEvent) => {
+    e.preventDefault()
+    if (!user) return
+
+    setCreatingNeighborhood(true)
+    try {
+      // Use a geocoding service in production. For demo, use city center coordinates
+      const cityCoordinates: Record<string, { lat: number; lng: number }> = {
+        'new york': { lat: 40.7128, lng: -74.0060 },
+        'los angeles': { lat: 34.0522, lng: -118.2437 },
+        'chicago': { lat: 41.8781, lng: -87.6298 },
+        'houston': { lat: 29.7604, lng: -95.3698 },
+        'phoenix': { lat: 33.4484, lng: -112.0740 },
+        'philadelphia': { lat: 39.9526, lng: -75.1652 },
+        'san antonio': { lat: 29.4241, lng: -98.4936 },
+        'san diego': { lat: 32.7157, lng: -117.1611 },
+        'dallas': { lat: 32.7767, lng: -96.7970 },
+        'san jose': { lat: 37.3382, lng: -121.8863 }
+      }
+
+      const cityLower = newNeighborhood.city.toLowerCase()
+      const coords = cityCoordinates[cityLower] || { lat: 39.8283, lng: -98.5795 } // Default to US center
+
+      const { data, error } = await supabase
+        .from('neighborhoods')
+        .insert({
+          name: newNeighborhood.name || `${newNeighborhood.city} Community`,
+          city: newNeighborhood.city,
+          state: newNeighborhood.state.toUpperCase(),
+          zip_code: newNeighborhood.zipCode || null,
+          lat: coords.lat,
+          lng: coords.lng,
+          radius_miles: 5
+        })
+        .select()
+        .single()
+
+      if (error) throw error
+
+      // Join the newly created neighborhood
+      await joinNeighborhood(data.id)
+      
+      // Reset form and close modal
+      setNewNeighborhood({ name: '', city: '', state: '', zipCode: '' })
+      setShowCreateNeighborhood(false)
+      
+      // Reload neighborhoods list
+      await loadNeighborhoods()
+    } catch (error) {
+      console.error('Error creating neighborhood:', error)
+      alert('Failed to create neighborhood. It may already exist.')
+    } finally {
+      setCreatingNeighborhood(false)
     }
   }
 
@@ -337,6 +402,17 @@ export function CommunityChat() {
           </div>
         </div>
 
+        <div className="mb-6 flex justify-between items-center">
+          <h2 className="text-xl font-semibold text-gray-900">Available Communities</h2>
+          <button
+            onClick={() => setShowCreateNeighborhood(true)}
+            className="bg-gradient-to-r from-green-600 to-emerald-600 text-white px-4 py-2 rounded-lg hover:from-green-700 hover:to-emerald-700 transition-all duration-200 flex items-center space-x-2"
+          >
+            <MapPin className="h-4 w-4" />
+            <span>Create New Community</span>
+          </button>
+        </div>
+
         <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-3">
           {neighborhoods.map((hood) => (
             <div key={hood.id} className="bg-white rounded-xl shadow-sm border p-6 hover:shadow-lg transition-all duration-200 transform hover:scale-[1.02]">
@@ -364,6 +440,88 @@ export function CommunityChat() {
             </div>
           ))}
         </div>
+
+        {/* Create Neighborhood Modal */}
+        {showCreateNeighborhood && (
+          <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center p-4 z-50">
+            <div className="bg-white rounded-2xl shadow-xl max-w-md w-full p-6">
+              <h3 className="text-xl font-bold text-gray-900 mb-4">Create New Community</h3>
+              <form onSubmit={createNeighborhood} className="space-y-4">
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-1">
+                    Community Name (optional)
+                  </label>
+                  <input
+                    type="text"
+                    value={newNeighborhood.name}
+                    onChange={(e) => setNewNeighborhood({...newNeighborhood, name: e.target.value})}
+                    placeholder="e.g., Downtown Community"
+                    className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+                  />
+                </div>
+                
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-1">
+                    City <span className="text-red-500">*</span>
+                  </label>
+                  <input
+                    type="text"
+                    value={newNeighborhood.city}
+                    onChange={(e) => setNewNeighborhood({...newNeighborhood, city: e.target.value})}
+                    placeholder="e.g., Austin"
+                    required
+                    className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+                  />
+                </div>
+                
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-1">
+                    State <span className="text-red-500">*</span>
+                  </label>
+                  <input
+                    type="text"
+                    value={newNeighborhood.state}
+                    onChange={(e) => setNewNeighborhood({...newNeighborhood, state: e.target.value})}
+                    placeholder="e.g., TX"
+                    maxLength={2}
+                    required
+                    className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+                  />
+                </div>
+                
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-1">
+                    ZIP Code (optional)
+                  </label>
+                  <input
+                    type="text"
+                    value={newNeighborhood.zipCode}
+                    onChange={(e) => setNewNeighborhood({...newNeighborhood, zipCode: e.target.value})}
+                    placeholder="e.g., 78701"
+                    className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+                  />
+                </div>
+                
+                <div className="flex space-x-3 pt-4">
+                  <button
+                    type="button"
+                    onClick={() => setShowCreateNeighborhood(false)}
+                    className="flex-1 px-4 py-2 border border-gray-300 text-gray-700 rounded-lg hover:bg-gray-50"
+                  >
+                    Cancel
+                  </button>
+                  <button
+                    type="submit"
+                    disabled={creatingNeighborhood}
+                    className="flex-1 px-4 py-2 bg-gradient-to-r from-green-600 to-emerald-600 text-white rounded-lg hover:from-green-700 hover:to-emerald-700 disabled:opacity-50 disabled:cursor-not-allowed"
+                  >
+                    {creatingNeighborhood ? 'Creating...' : 'Create Community'}
+                  </button>
+                </div>
+              </form>
+            </div>
+          </div>
+        )}
 
         <div className="mt-8 bg-blue-50 rounded-lg p-6">
           <h3 className="font-semibold text-blue-900 mb-3">Community Guidelines</h3>

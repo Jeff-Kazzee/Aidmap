@@ -328,7 +328,7 @@ export function Map() {
   }
 
   return (
-    <div className="relative h-screen">
+    <div className="relative h-[calc(100vh-7rem)] md:h-[calc(100vh-4rem)]">
       <MapContainer
         center={userNeighborhood ? [userNeighborhood.lat, userNeighborhood.lng] : defaultCenter}
         zoom={userNeighborhood ? 12 : 13}

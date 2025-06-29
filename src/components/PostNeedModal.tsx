@@ -38,6 +38,7 @@ export function PostNeedModal({ isOpen, onClose, onSuccess, initialLocation }: P
   const [address, setAddress] = useState('')
   const [loading, setLoading] = useState(false)
   const [error, setError] = useState('')
+  const [userNeighborhood, setUserNeighborhood] = useState<{name: string, city: string, state: string} | null>(null)
 
   useEffect(() => {
     if (initialLocation) {
@@ -45,6 +46,37 @@ export function PostNeedModal({ isOpen, onClose, onSuccess, initialLocation }: P
       setLng(initialLocation.lng)
     }
   }, [initialLocation])
+
+  useEffect(() => {
+    // Fetch user's neighborhood information
+    const fetchUserNeighborhood = async () => {
+      if (!user) return
+      
+      try {
+        const { data: profile } = await supabase
+          .from('profiles')
+          .select('neighborhood_id')
+          .eq('id', user.id)
+          .single()
+        
+        if (profile?.neighborhood_id) {
+          const { data: neighborhood } = await supabase
+            .from('neighborhoods')
+            .select('name, city, state')
+            .eq('id', profile.neighborhood_id)
+            .single()
+          
+          if (neighborhood) {
+            setUserNeighborhood(neighborhood)
+          }
+        }
+      } catch (error) {
+        console.error('Error fetching neighborhood:', error)
+      }
+    }
+    
+    fetchUserNeighborhood()
+  }, [user])
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
@@ -214,45 +246,50 @@ export function PostNeedModal({ isOpen, onClose, onSuccess, initialLocation }: P
 
           <div>
             <label htmlFor="address" className="block text-sm font-medium text-gray-700 mb-2">
-              Address (optional)
+              Delivery/Meeting Address *
             </label>
-            <input
-              id="address"
-              type="text"
-              value={address}
-              onChange={(e) => setAddress(e.target.value)}
-              className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-all duration-200 hover:border-gray-400"
-              placeholder="Street address for delivery"
-              maxLength={200}
-            />
+            <div className="relative">
+              <MapPin className="absolute left-3 top-3 h-5 w-5 text-gray-400" />
+              <input
+                id="address"
+                type="text"
+                required
+                value={address}
+                onChange={(e) => setAddress(e.target.value)}
+                className="w-full pl-10 pr-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-all duration-200 hover:border-gray-400"
+                placeholder="Street address, cross streets, or landmark"
+                maxLength={200}
+              />
+            </div>
+            <p className="text-xs text-gray-500 mt-1">
+              This will help donors find you. Your exact location will not be shown on the map.
+            </p>
           </div>
 
           <div>
-            <label htmlFor="location" className="block text-sm font-medium text-gray-700 mb-2">
-              Location
+            <label className="block text-sm font-medium text-gray-700 mb-2">
+              Your Neighborhood
             </label>
-            <div className="grid grid-cols-2 gap-3">
-              <div className="relative">
-                <MapPin className="absolute left-3 top-3 h-5 w-5 text-gray-400" />
-                <input
-                  type="number"
-                  value={lat.toFixed(6)}
-                  onChange={(e) => setLat(parseFloat(e.target.value) || 0)}
-                  className="w-full pl-10 pr-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-all duration-200 hover:border-gray-400 text-sm"
-                  placeholder="Latitude"
-                  step="any"
-                />
+            {userNeighborhood ? (
+              <div className="bg-blue-50 rounded-lg p-4 border border-blue-200">
+                <div className="flex items-center space-x-2">
+                  <MapPin className="h-5 w-5 text-blue-600" />
+                  <div>
+                    <p className="font-semibold text-blue-900">{userNeighborhood.name}</p>
+                    <p className="text-sm text-blue-700">{userNeighborhood.city}, {userNeighborhood.state}</p>
+                  </div>
+                </div>
+                <p className="text-xs text-blue-600 mt-2">
+                  Your request will be visible to people in this neighborhood area
+                </p>
               </div>
-              <input
-                type="number"
-                value={lng.toFixed(6)}
-                onChange={(e) => setLng(parseFloat(e.target.value) || 0)}
-                className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-all duration-200 hover:border-gray-400 text-sm"
-                placeholder="Longitude"
-                step="any"
-              />
-            </div>
-            <p className="text-xs text-gray-500 mt-1">Click on the map to set location automatically</p>
+            ) : (
+              <div className="bg-yellow-50 rounded-lg p-4 border border-yellow-200">
+                <p className="text-sm text-yellow-800">
+                  Please join a neighborhood in the Community section to post requests
+                </p>
+              </div>
+            )}
           </div>
 
           {error && (

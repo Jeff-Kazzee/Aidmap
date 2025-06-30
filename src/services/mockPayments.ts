@@ -146,11 +146,11 @@ export async function releaseMockEscrow(
 
 // Get mock balance (for demo purposes)
 export function getMockBalance(): number {
-  // Return a random balance between 100-1000 ALGO
+  // Return a random balance between 100-1000 USD
   return Math.floor(Math.random() * 900) + 100;
 }
 
 // Format amount for display
 export function formatAlgoAmount(amount: number): string {
-  return `${amount.toFixed(2)} ALGO`;
+  return `$${amount.toFixed(2)}`;
 }

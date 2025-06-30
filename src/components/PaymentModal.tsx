@@ -7,8 +7,10 @@ import { processMockPayment, type MockCard } from '../services/mockPayments'
 interface AidRequest {
   id: string
   title: string
-  amount_algo: number
+  amount_algo: number | null
   user_id: string
+  assistance_type?: 'monetary' | 'service' | 'both'
+  service_description?: string | null
 }
 
 interface PaymentModalProps {
@@ -21,7 +23,7 @@ interface PaymentModalProps {
 export function PaymentModal({ isOpen, onClose, aidRequest, onSuccess }: PaymentModalProps) {
   const { user } = useAuth()
   const [paymentMethod, setPaymentMethod] = useState<'card' | 'cashapp' | 'venmo' | 'paypal'>('card')
-  const [amount, setAmount] = useState(aidRequest.amount_algo.toString())
+  const [amount, setAmount] = useState(aidRequest.amount_algo?.toString() || '')
   const [loading, setLoading] = useState(false)
   const [copied, setCopied] = useState(false)
   const [showDemoMode] = useState(true)
@@ -161,14 +163,28 @@ export function PaymentModal({ isOpen, onClose, aidRequest, onSuccess }: Payment
           <div className="bg-gray-50 rounded-lg p-4">
             <h3 className="font-semibold text-gray-900 mb-2">Request Summary</h3>
             <p className="text-gray-600 text-sm mb-2">{aidRequest.title}</p>
-            <p className="text-lg font-bold text-green-600">${aidRequest.amount_algo.toFixed(2)}</p>
+            {aidRequest.amount_algo && (
+              <p className="text-lg font-bold text-green-600">${aidRequest.amount_algo.toFixed(2)}</p>
+            )}
+            {aidRequest.assistance_type === 'service' && (
+              <p className="text-lg font-semibold text-blue-600">Service Request</p>
+            )}
+            {aidRequest.assistance_type === 'both' && (
+              <p className="text-sm text-gray-500">Also needs service assistance</p>
+            )}
+            {aidRequest.service_description && (
+              <div className="mt-2 p-2 bg-blue-50 rounded">
+                <p className="text-sm text-blue-800">{aidRequest.service_description}</p>
+              </div>
+            )}
           </div>
 
-          {/* Amount Input */}
-          <div>
-            <label htmlFor="amount" className="block text-sm font-medium text-gray-700 mb-2">
-              Amount to Send
-            </label>
+          {/* Amount Input - Only show for monetary requests */}
+          {(!aidRequest.assistance_type || aidRequest.assistance_type === 'monetary' || aidRequest.assistance_type === 'both') && (
+            <div>
+              <label htmlFor="amount" className="block text-sm font-medium text-gray-700 mb-2">
+                Amount to Send
+              </label>
             <div className="relative">
               <DollarSign className="absolute left-3 top-3 h-5 w-5 text-gray-400" />
               <input
@@ -182,14 +198,36 @@ export function PaymentModal({ isOpen, onClose, aidRequest, onSuccess }: Payment
                 placeholder="0.00"
               />
             </div>
-          </div>
+            </div>
+          )}
 
-          {/* Payment Method Selection */}
-          <div>
-            <label className="block text-sm font-medium text-gray-700 mb-3">
-              Choose Payment Method
-            </label>
-            <div className="grid grid-cols-2 gap-3">
+          {/* Service Offer Section - Only show for service requests */}
+          {(aidRequest.assistance_type === 'service' || aidRequest.assistance_type === 'both') && (
+            <div className="bg-blue-50 p-4 rounded-lg">
+              <h3 className="font-semibold text-blue-900 mb-2">Offer Your Help</h3>
+              <p className="text-sm text-blue-800 mb-3">
+                Contact the requester through the messaging system to coordinate how you can help with their service needs.
+              </p>
+              <button
+                onClick={() => {
+                  // This would normally navigate to messages
+                  alert('Messaging feature will open here to coordinate service help')
+                }}
+                className="bg-blue-600 text-white px-4 py-2 rounded-md hover:bg-blue-700 transition-colors text-sm font-medium"
+              >
+                Send Message to Coordinate
+              </button>
+            </div>
+          )}
+
+          {/* Payment Method Selection - Only for monetary */}
+          {(!aidRequest.assistance_type || aidRequest.assistance_type === 'monetary' || aidRequest.assistance_type === 'both') && (
+            <>
+            <div>
+              <label className="block text-sm font-medium text-gray-700 mb-3">
+                Choose Payment Method
+              </label>
+              <div className="grid grid-cols-2 gap-3">
               <button
                 onClick={() => setPaymentMethod('card')}
                 className={`p-3 border rounded-lg transition-all duration-200 ${
@@ -237,8 +275,8 @@ export function PaymentModal({ isOpen, onClose, aidRequest, onSuccess }: Payment
                 <QrCode className="h-6 w-6 mx-auto mb-1" />
                 <span className="text-sm font-medium">PayPal</span>
               </button>
+              </div>
             </div>
-          </div>
 
           {/* Mock Card Payment Form */}
           {paymentMethod === 'card' && (
@@ -342,6 +380,8 @@ export function PaymentModal({ isOpen, onClose, aidRequest, onSuccess }: Payment
                 </ol>
               </div>
             </div>
+          )}
+          </>
           )}
 
 

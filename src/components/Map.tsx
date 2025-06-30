@@ -43,7 +43,7 @@ interface AidRequest {
   description: string
   lat: number
   lng: number
-  amount_algo: number
+  amount_algo: number | null
   status: 'open' | 'funded' | 'in_progress' | 'completed' | 'cancelled'
   created_at: string
   user_id: string
@@ -52,6 +52,8 @@ interface AidRequest {
   address?: string
   fulfillment_status?: 'fulfilled' | 'unfulfilled' | null
   closed_at?: string | null
+  assistance_type?: 'monetary' | 'service' | 'both'
+  service_description?: string | null
 }
 
 interface Profile {
@@ -362,7 +364,8 @@ export function Map() {
     }
   }
 
-  const formatAmount = (amount: number) => {
+  const formatAmount = (amount: number | null) => {
+    if (!amount) return ''
     return `$${amount.toFixed(2)}`
   }
 
@@ -454,7 +457,11 @@ export function Map() {
                     <p className="text-gray-600 text-sm mb-2 line-clamp-2">{request.description}</p>
                   )}
                   <div className="flex items-center justify-between mb-2">
-                    <span className="font-bold text-green-600">{formatAmount(request.amount_algo)}</span>
+                    <span className="font-bold text-green-600">
+                      {request.amount_algo ? formatAmount(request.amount_algo) : ''}
+                      {request.assistance_type === 'service' && 'Service'}
+                      {request.assistance_type === 'both' && request.amount_algo && ' + Service'}
+                    </span>
                     <span className={`text-xs px-2 py-1 rounded-full font-medium ${getStatusColor(request.status)}`}>
                       {request.status}
                     </span>

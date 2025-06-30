@@ -137,8 +137,18 @@ export function NeedDetailsModal({ isOpen, onClose, aidRequest, onFund }: NeedDe
               </span>
             </div>
             <div className="text-right">
-              <p className="text-2xl font-bold text-green-600">{formatAmount(aidRequest.amount_algo)}</p>
-              <p className="text-sm text-gray-500">Requested amount</p>
+              {aidRequest.amount_algo && (
+                <>
+                  <p className="text-2xl font-bold text-green-600">{formatAmount(aidRequest.amount_algo)}</p>
+                  <p className="text-sm text-gray-500">Requested amount</p>
+                </>
+              )}
+              {aidRequest.assistance_type === 'service' && (
+                <p className="text-lg font-semibold text-blue-600">Service Request</p>
+              )}
+              {aidRequest.assistance_type === 'both' && (
+                <p className="text-sm text-gray-500 mt-1">+ Service Request</p>
+              )}
             </div>
           </div>
 
@@ -155,6 +165,14 @@ export function NeedDetailsModal({ isOpen, onClose, aidRequest, onFund }: NeedDe
               Category: <span className="font-medium text-blue-600">{aidRequest.category.charAt(0).toUpperCase() + aidRequest.category.slice(1)}</span>
             </span>
           </div>
+
+          {/* Service Description */}
+          {aidRequest.service_description && (
+            <div className="bg-blue-50 p-4 rounded-lg">
+              <p className="text-sm font-medium text-blue-900 mb-1">Service/Help Needed:</p>
+              <p className="text-sm text-blue-800">{aidRequest.service_description}</p>
+            </div>
+          )}
 
           {/* Details */}
           <div className="space-y-3">
@@ -198,7 +216,11 @@ export function NeedDetailsModal({ isOpen, onClose, aidRequest, onFund }: NeedDe
                 className="w-full bg-gradient-to-r from-blue-600 to-indigo-600 text-white py-3 rounded-lg font-medium hover:from-blue-700 hover:to-indigo-700 transition-all duration-200 flex items-center justify-center space-x-2 transform hover:scale-[1.02] shadow-lg"
               >
                 <Heart className="h-5 w-5" />
-                <span>Help Fund This Request</span>
+                <span>
+                  {aidRequest.assistance_type === 'monetary' && 'Help Fund This Request'}
+                  {aidRequest.assistance_type === 'service' && 'Offer to Help'}
+                  {aidRequest.assistance_type === 'both' && 'Help with This Request'}
+                </span>
               </button>
             ) : user && user.id === aidRequest.user_id ? (
               <div className="text-center py-3">
@@ -221,10 +243,17 @@ export function NeedDetailsModal({ isOpen, onClose, aidRequest, onFund }: NeedDe
           <div className="bg-blue-50 rounded-lg p-4">
             <h4 className="font-semibold text-blue-900 mb-2">How it works</h4>
             <ul className="text-sm text-blue-800 space-y-1">
-              <li>• Send money directly to help with this specific need</li>
-              <li>• Coordinate with the requester for delivery details</li>
-              <li>• Multiple payment options available including CashApp</li>
-              <li>• Built for community mutual aid and support</li>
+              {(aidRequest.assistance_type === 'monetary' || aidRequest.assistance_type === 'both') && (
+                <>
+                  <li>• Send money directly to help with this specific need</li>
+                  <li>• Multiple payment options available including CashApp</li>
+                </>
+              )}
+              {(aidRequest.assistance_type === 'service' || aidRequest.assistance_type === 'both') && (
+                <li>• Offer your time, skills, or services to help</li>
+              )}
+              <li>• Coordinate with the requester for delivery/meeting details</li>
+              <li>• Built for community mutual aid and neighbor-to-neighbor support</li>
             </ul>
           </div>
         </div>

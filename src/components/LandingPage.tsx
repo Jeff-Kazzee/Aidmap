@@ -381,6 +381,7 @@ export function LandingPage() {
 
           <div className="border-t border-gray-800 mt-12 pt-8 text-center text-gray-400">
             <p>&copy; 2024 AidMap. All rights reserved. Built with ❤️ for stronger communities.</p>
+            <p className="mt-2 text-sm">🚧 This is a demo site - not yet live for public use 🚧</p>
           </div>
         </div>
       </footer>

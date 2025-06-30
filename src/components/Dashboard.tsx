@@ -76,7 +76,7 @@ export function Dashboard() {
   }
 
   const formatAmount = (amount: number) => {
-    return `${amount.toFixed(2)} ALGO`
+    return `$${amount.toFixed(2)}`
   }
 
   const formatDate = (dateString: string) => {
@@ -229,7 +229,15 @@ export function Dashboard() {
                       </div>
                     </div>
                     <div className="text-right ml-4">
-                      <p className="text-lg font-bold text-green-600">{formatAmount(request.amount_algo)}</p>
+                      {request.amount_algo && (
+                        <p className="text-lg font-bold text-green-600">{formatAmount(request.amount_algo)}</p>
+                      )}
+                      {request.assistance_type === 'service' && (
+                        <p className="text-lg font-semibold text-blue-600">Service</p>
+                      )}
+                      {request.assistance_type === 'both' && request.amount_algo && (
+                        <p className="text-sm text-gray-500">+ Service</p>
+                      )}
                       <span className={`text-xs px-2 py-1 rounded-full font-medium ${getStatusColor(request.status)}`}>
                         {request.status.replace('_', ' ')}
                       </span>
@@ -360,7 +368,15 @@ export function Dashboard() {
                       </div>
                     </div>
                     <div className="text-right ml-4">
-                      <p className="text-lg font-bold text-green-600">{formatAmount(request.amount_algo)}</p>
+                      {request.amount_algo && (
+                        <p className="text-lg font-bold text-green-600">{formatAmount(request.amount_algo)}</p>
+                      )}
+                      {request.assistance_type === 'service' && (
+                        <p className="text-lg font-semibold text-blue-600">Service</p>
+                      )}
+                      {request.assistance_type === 'both' && request.amount_algo && (
+                        <p className="text-sm text-gray-500">+ Service</p>
+                      )}
                       <span className={`text-xs px-2 py-1 rounded-full font-medium ${getStatusColor(request.status)}`}>
                         {request.status.replace('_', ' ')}
                       </span>

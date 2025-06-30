@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react'
-import { X, MapPin, DollarSign, FileText, Tag, AlertTriangle } from 'lucide-react'
+import { X, MapPin, DollarSign, FileText, Tag, AlertTriangle, HandshakeIcon } from 'lucide-react'
 import { supabase } from '../lib/supabase'
 import { useAuth } from '../hooks/useAuth'
 
@@ -36,6 +36,8 @@ export function PostNeedModal({ isOpen, onClose, onSuccess, initialLocation }: P
   const [lat, setLat] = useState(initialLocation?.lat || 40.7128)
   const [lng, setLng] = useState(initialLocation?.lng || -74.0060)
   const [address, setAddress] = useState('')
+  const [assistanceType, setAssistanceType] = useState<'monetary' | 'service' | 'both'>('monetary')
+  const [serviceDescription, setServiceDescription] = useState('')
   const [loading, setLoading] = useState(false)
   const [error, setError] = useState('')
   const [userNeighborhood, setUserNeighborhood] = useState<{name: string, city: string, state: string} | null>(null)
@@ -86,7 +88,21 @@ export function PostNeedModal({ isOpen, onClose, onSuccess, initialLocation }: P
     setError('')
 
     try {
-      const amountUSD = parseFloat(amount)
+      let amountUSD: number | null = null
+      if (assistanceType === 'monetary' || assistanceType === 'both') {
+        amountUSD = parseFloat(amount)
+        if (isNaN(amountUSD) || amountUSD <= 0) {
+          setError('Please enter a valid amount for monetary assistance')
+          setLoading(false)
+          return
+        }
+      }
+      
+      if ((assistanceType === 'service' || assistanceType === 'both') && !serviceDescription.trim()) {
+        setError('Please describe the service or help you need')
+        setLoading(false)
+        return
+      }
       
       const { error } = await supabase
         .from('aid_requests')
@@ -97,11 +113,13 @@ export function PostNeedModal({ isOpen, onClose, onSuccess, initialLocation }: P
             description,
             category,
             urgency,
-            amount_algo: amountUSD, // Now storing USD amount instead of ALGO
+            amount_algo: amountUSD,
             lat,
             lng,
             address: address || null,
-            status: 'open'
+            status: 'open',
+            assistance_type: assistanceType,
+            service_description: (assistanceType === 'service' || assistanceType === 'both') ? serviceDescription : null
           }
         ])
 
@@ -115,6 +133,8 @@ export function PostNeedModal({ isOpen, onClose, onSuccess, initialLocation }: P
       setCategory('food')
       setUrgency('medium')
       setAddress('')
+      setAssistanceType('monetary')
+      setServiceDescription('')
     } catch (error) {
       setError(error instanceof Error ? error.message : 'An error occurred')
     } finally {
@@ -223,9 +243,53 @@ export function PostNeedModal({ isOpen, onClose, onSuccess, initialLocation }: P
           </div>
 
           <div>
-            <label htmlFor="amount" className="block text-sm font-medium text-gray-700 mb-2">
-              Amount needed (USD) *
+            <label className="block text-sm font-medium text-gray-700 mb-2">
+              Type of Assistance Needed *
             </label>
+            <div className="grid grid-cols-3 gap-2">
+              <button
+                type="button"
+                onClick={() => setAssistanceType('monetary')}
+                className={`px-4 py-3 rounded-lg border-2 transition-all duration-200 flex items-center justify-center space-x-2 ${
+                  assistanceType === 'monetary'
+                    ? 'border-blue-500 bg-blue-50 text-blue-700'
+                    : 'border-gray-300 hover:border-gray-400'
+                }`}
+              >
+                <DollarSign className="h-4 w-4" />
+                <span className="text-sm font-medium">Money</span>
+              </button>
+              <button
+                type="button"
+                onClick={() => setAssistanceType('service')}
+                className={`px-4 py-3 rounded-lg border-2 transition-all duration-200 flex items-center justify-center space-x-2 ${
+                  assistanceType === 'service'
+                    ? 'border-blue-500 bg-blue-50 text-blue-700'
+                    : 'border-gray-300 hover:border-gray-400'
+                }`}
+              >
+                <HandshakeIcon className="h-4 w-4" />
+                <span className="text-sm font-medium">Service</span>
+              </button>
+              <button
+                type="button"
+                onClick={() => setAssistanceType('both')}
+                className={`px-4 py-3 rounded-lg border-2 transition-all duration-200 flex items-center justify-center space-x-2 ${
+                  assistanceType === 'both'
+                    ? 'border-blue-500 bg-blue-50 text-blue-700'
+                    : 'border-gray-300 hover:border-gray-400'
+                }`}
+              >
+                <span className="text-sm font-medium">Both</span>
+              </button>
+            </div>
+          </div>
+
+          {(assistanceType === 'monetary' || assistanceType === 'both') && (
+            <div>
+              <label htmlFor="amount" className="block text-sm font-medium text-gray-700 mb-2">
+                Amount needed (USD) *
+              </label>
             <div className="relative">
               <DollarSign className="absolute left-3 top-3 h-5 w-5 text-gray-400" />
               <input
@@ -242,7 +306,29 @@ export function PostNeedModal({ isOpen, onClose, onSuccess, initialLocation }: P
               />
             </div>
             <p className="text-xs text-gray-500 mt-1">Amount in US Dollars</p>
-          </div>
+            </div>
+          )}
+
+          {(assistanceType === 'service' || assistanceType === 'both') && (
+            <div>
+              <label htmlFor="serviceDescription" className="block text-sm font-medium text-gray-700 mb-2">
+                Service/Help Description *
+              </label>
+              <div className="relative">
+                <HandshakeIcon className="absolute left-3 top-3 h-5 w-5 text-gray-400" />
+                <textarea
+                  id="serviceDescription"
+                  required={assistanceType === 'service' || assistanceType === 'both'}
+                  value={serviceDescription}
+                  onChange={(e) => setServiceDescription(e.target.value)}
+                  className="w-full pl-10 pr-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-all duration-200 hover:border-gray-400"
+                  placeholder="Describe the service or help you need (e.g., grocery shopping, transportation, childcare, home repair)"
+                  rows={3}
+                />
+              </div>
+              <p className="text-xs text-gray-500 mt-1">Be specific about what kind of help you need</p>
+            </div>
+          )}
 
           <div>
             <label htmlFor="address" className="block text-sm font-medium text-gray-700 mb-2">

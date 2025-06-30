@@ -11,12 +11,14 @@ interface EditRequestModalProps {
     id: string
     title: string
     description: string
-    amount_algo: number
+    amount_algo: number | null
     category: string
     urgency: string
     address: string | null
     lat: number
     lng: number
+    assistance_type?: 'monetary' | 'service' | 'both'
+    service_description?: string | null
   }
 }
 
@@ -40,10 +42,12 @@ export function EditRequestModal({ isOpen, onClose, onSuccess, request }: EditRe
   const { user } = useAuth()
   const [title, setTitle] = useState(request.title)
   const [description, setDescription] = useState(request.description)
-  const [amount, setAmount] = useState(request.amount_algo.toString())
+  const [amount, setAmount] = useState(request.amount_algo?.toString() || '')
   const [category, setCategory] = useState(request.category)
   const [urgency, setUrgency] = useState(request.urgency)
   const [address, setAddress] = useState(request.address || '')
+  const [assistanceType, setAssistanceType] = useState<'monetary' | 'service' | 'both'>(request.assistance_type || 'monetary')
+  const [serviceDescription, setServiceDescription] = useState(request.service_description || '')
   const [loading, setLoading] = useState(false)
   const [error, setError] = useState('')
 
@@ -51,10 +55,12 @@ export function EditRequestModal({ isOpen, onClose, onSuccess, request }: EditRe
     // Reset form when request changes
     setTitle(request.title)
     setDescription(request.description)
-    setAmount(request.amount_algo.toString())
+    setAmount(request.amount_algo?.toString() || '')
     setCategory(request.category)
     setUrgency(request.urgency)
     setAddress(request.address || '')
+    setAssistanceType(request.assistance_type || 'monetary')
+    setServiceDescription(request.service_description || '')
   }, [request])
 
   const handleSubmit = async (e: React.FormEvent) => {
@@ -65,7 +71,15 @@ export function EditRequestModal({ isOpen, onClose, onSuccess, request }: EditRe
     setError('')
 
     try {
-      const amountUSD = parseFloat(amount)
+      let amountUSD: number | null = null
+      if (assistanceType === 'monetary' || assistanceType === 'both') {
+        amountUSD = parseFloat(amount)
+        if (isNaN(amountUSD) || amountUSD <= 0) {
+          setError('Please enter a valid amount for monetary assistance')
+          setLoading(false)
+          return
+        }
+      }
       
       const { error } = await supabase
         .from('aid_requests')
@@ -75,7 +89,9 @@ export function EditRequestModal({ isOpen, onClose, onSuccess, request }: EditRe
           category,
           urgency,
           amount_algo: amountUSD,
-          address: address.trim() || null
+          address: address.trim() || null,
+          assistance_type: assistanceType,
+          service_description: (assistanceType === 'service' || assistanceType === 'both') ? serviceDescription : null
         })
         .eq('id', request.id)
         .eq('user_id', user.id) // Extra safety check

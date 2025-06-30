@@ -338,7 +338,9 @@ export function AdminPanel() {
                         </div>
                       </td>
                       <td className="px-6 py-4 text-sm text-gray-900">
-                        {formatAmount(request.amount_algo)}
+                        {request.amount_algo ? formatAmount(request.amount_algo) : ''}
+                        {request.assistance_type === 'service' && 'Service'}
+                        {request.assistance_type === 'both' && request.amount_algo && ' + Service'}
                       </td>
                       <td className="px-6 py-4">
                         <select

@@ -20,7 +20,7 @@ export type Database = {
           description: string
           category: string
           urgency: string
-          amount_algo: number
+          amount_algo: number | null
           lat: number
           lng: number
           address: string | null
@@ -32,6 +32,8 @@ export type Database = {
           escrow_address: string | null
           proof_of_delivery_url: string | null
           audio_url: string | null
+          assistance_type: 'monetary' | 'service' | 'both'
+          service_description: string | null
         }
         Insert: {
           id?: string
@@ -60,7 +62,7 @@ export type Database = {
           description?: string
           category?: string
           urgency?: string
-          amount_algo?: number
+          amount_algo?: number | null
           lat?: number
           lng?: number
           address?: string | null
@@ -72,6 +74,8 @@ export type Database = {
           escrow_address?: string | null
           proof_of_delivery_url?: string | null
           audio_url?: string | null
+          assistance_type?: 'monetary' | 'service' | 'both'
+          service_description?: string | null
         }
       }
       transactions: {
